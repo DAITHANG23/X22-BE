@@ -13,5 +13,5 @@ userRouter.post(
   middlewares.register,
   userController.createNewUser
 );
-
+userRouter.post("/login", middlewares.login, userController.loginUser);
 export default userRouter;
