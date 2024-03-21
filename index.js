@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 
 //import routes
 import userRouter from "./routes/user.js";
-
+import restaurantRouter from "./routes/restaurant.js";
 // ENV
 dotenv.config();
 const port = process.env.PORT || 3003;
@@ -27,7 +27,8 @@ app.use("/uploads", express.static("uploads"));
 
 // Routes
 app.use("/user", userRouter);
-
+app.use("/restaurant", restaurantRouter);
+//
 app.listen(port, () => {
   console.log(`Server has been run on port ${port}!`);
 });

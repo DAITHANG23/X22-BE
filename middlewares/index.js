@@ -1,17 +1,20 @@
-import UserModel from "../models/User.js";
+import CustomersModel from "../models/Customers.js";
+import EmployeesModel from "../models/Employees.js";
 import { StatusCodes } from "http-status-codes";
 
 const middlewares = {
   register: async (req, res, next) => {
     try {
-      const { email, password, fullName } = req.body;
-      if (!email || !password || !fullName) {
+      const { email, password, name, role } = req.body;
+      if (!email || !password || !name || !role) {
         res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please provide information",
         });
         return;
       }
-      const existedEmail = await UserModel.findOne({ email });
+      let existedEmail = null;
+      existedEmail = await CustomersModel.findOne({ email });
+      if (!existedEmail) existedEmail = await EmployeesModel.findOne({ email });
       //   Check Email existed
       if (!!existedEmail) {
         res.status(StatusCodes.BAD_REQUEST).json({
