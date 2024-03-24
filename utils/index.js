@@ -5,7 +5,7 @@ const createAccessToken = (document) => {
     id: document._id,
   };
   const newToken = jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "24h",
   });
 
   // Save the token to HttpOnly cookie
@@ -14,7 +14,6 @@ const createAccessToken = (document) => {
 
   return newToken;
 };
-
 const verifyToken = (token) => {
   try {
     const checkToken = jwt.verify(token, process.env.JWT_SECRET);
@@ -25,5 +24,14 @@ const verifyToken = (token) => {
     return null;
   }
 };
+const decodeToken = (token) => {
+  try {
+    const decoded = jwt.decode(token);
+    return decoded;
+  } catch (error) {
+    console.error("Token decoding failed:", error.message);
+    return null;
+  }
+};
 
-export { createAccessToken, verifyToken };
+export { createAccessToken, verifyToken, decodeToken };

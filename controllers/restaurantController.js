@@ -1,7 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import RestaurantsModel from "../models/Restaurants.js";
-import bcrypt from "bcrypt";
-import { createAccessToken } from "../utils/index.js";
+import MenuModel from "../models/Menu.js";
 import { ObjectId } from "mongodb";
 
 const restaurantController = {
@@ -36,9 +35,12 @@ const restaurantController = {
           .json({ message: "Restaurant not found" });
         return;
       }
+      // find menu by restaurant id and return array of menu items
+      const menu = await MenuModel.find({ idRestaurant: id });
+      console.log(menu);
       res
         .status(StatusCodes.OK)
-        .json({ data: restaurant, message: "Restaurant by id" });
+        .json({ data: { restaurant, menu }, message: "Restaurant by id" });
     } catch (error) {
       console.error(error);
       res

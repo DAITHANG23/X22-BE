@@ -6,7 +6,7 @@ const ReservationsSchema = mongoose.Schema({
     require: true,
   },
   phoneNumber: {
-    type: Number,
+    type: String,
     require: true,
   },
   idRestaurant: {
@@ -14,14 +14,14 @@ const ReservationsSchema = mongoose.Schema({
     ref: "Restaurants",
     require: true,
   },
-  idRestaurant: {
+  idCustomer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customers",
     require: false,
   },
   status: {
     type: Number,
-    enum: [0, 1, 2],
+    enum: [0, 1, 2, 3, 4],
     require: true,
   },
   people: {

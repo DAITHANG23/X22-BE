@@ -1,11 +1,6 @@
 import mongoose from "mongoose";
 
 const MenuSchema = mongoose.Schema({
-  idRestaurant: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Restaurants",
-    require: true,
-  },
   name: {
     type: String,
     require: true,
@@ -27,8 +22,13 @@ const MenuSchema = mongoose.Schema({
     type: Number,
     require: false,
   },
+  idRestaurant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurants",
+    require: true,
+  },
 });
 
-const MenuModel = mongoose.model("Menu", MenuSchema);
+const MenuModel = mongoose.model("Menus", MenuSchema);
 
 export default MenuModel;
