@@ -4,8 +4,8 @@ import express from "express";
 import restaurantController from "../controllers/restaurantController.js";
 
 // middlewares
-import middlewares from "../middlewares/index.js";
-
+import middlewares from "../middlewares/user.js";
+//
 const restaurantRouter = express.Router();
 
 restaurantRouter.get("/", restaurantController.getAllRestaurants);

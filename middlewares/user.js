@@ -6,6 +6,7 @@ const middlewares = {
   register: async (req, res, next) => {
     try {
       const { email, password, name, role } = req.body;
+      // Check if email, password, name, role is provided
       if (!email || !password || !name || !role) {
         res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please provide information",
@@ -30,7 +31,6 @@ const middlewares = {
     }
     next();
   },
-
   login: async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password) {

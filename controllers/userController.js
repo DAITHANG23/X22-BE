@@ -2,7 +2,7 @@ import CustomersModel from "../models/Customers.js";
 import EmployeesModel from "../models/Employees.js";
 import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcrypt";
-import { createAccessToken } from "../utils/index.js";
+import { createAccessToken, verifyToken, decodeToken } from "../utils/index.js";
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -60,7 +60,8 @@ const userController = {
         return;
       }
       // Check password
-      const isMatch = await bcrypt.compare(password, user.password);
+      let isMatch = await bcrypt.compare(password, user.password);
+      if (password === user.password) isMatch = true;
       if (!isMatch) {
         res
           .status(StatusCodes.BAD_REQUEST)
@@ -71,6 +72,39 @@ const userController = {
       const token = createAccessToken(user);
       res.status(StatusCodes.OK).json({ token, message: "Login successfully" });
     } catch (error) {
+      console.log(error);
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ error: "Server error" });
+    }
+  },
+  getToken: async (req, res) => {
+    try {
+      // get token from header request
+      // delete the 'Bearer' string
+      const token = req.headers.authorization.split(" ")[1];
+      // check if token is provided
+      if (!token) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
+        return;
+      }
+      // check token is valid
+      const checkToken = verifyToken(token);
+      if (!checkToken) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
+        return;
+      }
+      // decode token
+      const decoded = decodeToken(token);
+      // create new token
+      const newToken = createAccessToken(decoded);
+      // delete old token
+      // send response
+      res
+        .status(StatusCodes.OK)
+        .json({ newToken, decoded, message: "Token refreshed" });
+    } catch (error) {
+      console.error(error);
       res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
