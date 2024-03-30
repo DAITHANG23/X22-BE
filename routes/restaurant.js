@@ -1,14 +1,25 @@
 import express from "express";
 
+// middlewares
+import { upload } from "../middlewares/upload.js";
+
 // Controller
 import restaurantController from "../controllers/restaurantController.js";
 
-// middlewares
-import middlewares from "../middlewares/user.js";
-//
 const restaurantRouter = express.Router();
 
-restaurantRouter.get("/", restaurantController.getAllRestaurants);
+// CREATE
+restaurantRouter.post(
+  "/create",
+  upload.single("image"),
+  restaurantController.createRestaurant
+);
+
+// GET ALL restaurant
+restaurantRouter.get("/", restaurantController.getAllRestaurant);
+
+restaurantRouter.get("/search", restaurantController.getRestaurantByName);
+
 restaurantRouter.get("/:id", restaurantController.getRestaurantById);
 
 export default restaurantRouter;
