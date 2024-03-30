@@ -60,18 +60,32 @@ const reservationsController = {
       });
     } catch (error) {
       console.log(error);
-      req
+      res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
     }
   },
   getReservations: async (req, res) => {
     try {
-      const reservations = await reservationsModel.find();
-      res.status(StatusCodes.OK).json({ reservations });
+      const { idCustomer } = req.body;
+      // check if idCustomer is a valid ObjectId
+      if (!idCustomer || !ObjectId.isValid(idCustomer)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid customer id" });
+      }
+      const reservations = await reservationsModel.find({ idCustomer });
+      if (reservations === null || reservations.length === 0) {
+        res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "No reservation found" });
+      } else
+        res
+          .status(StatusCodes.OK)
+          .json({ reservations, massage: "get reservation success" });
     } catch (error) {
       console.log(error);
-      req
+      res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
     }
@@ -112,7 +126,7 @@ const reservationsController = {
       }
     } catch (error) {
       console.log(error);
-      req
+      res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
     }
