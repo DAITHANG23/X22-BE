@@ -20,7 +20,21 @@ const userController = {
         address,
         role,
       };
-
+      // Check email, name, phoneNumber, gender, address, role is provided
+      if (
+        !email ||
+        !password ||
+        !name ||
+        !phoneNumber ||
+        !gender ||
+        !address ||
+        !role
+      ) {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Please provide information" });
+        return;
+      }
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
 

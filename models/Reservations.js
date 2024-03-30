@@ -28,7 +28,7 @@ const ReservationsSchema = mongoose.Schema({
     type: Number,
     require: true,
   },
-  oder: {
+  order: {
     type: Array,
     require: false,
   },

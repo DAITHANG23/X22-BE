@@ -13,5 +13,6 @@ reservationsRouter.post(
   validateMiddlewares.checkPhoneNumber,
   reservationsController.createNewReservation
 );
+reservationsRouter.get("/", reservationsController.getReservations);
 reservationsRouter.get("/:id", reservationsController.cancelReservation);
 export default reservationsRouter;
