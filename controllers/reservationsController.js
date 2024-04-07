@@ -2,7 +2,9 @@ import { StatusCodes } from "http-status-codes";
 import CustomersModel from "../models/Customers.js";
 import { ObjectId } from "mongodb";
 import reservationsModel from "../models/Reservations.js";
-
+import RestaurantsModel from "../models/Restaurants.js";
+import tablesModel from "../models/Tables.js";
+import menuModel from "../models/Menu.js";
 const reservationsController = {
   createNewReservation: async (req, res) => {
     try {
@@ -22,6 +24,11 @@ const reservationsController = {
           .status(StatusCodes.BAD_REQUEST)
           .json({ error: "Invalid restaurant id" });
       } else idRestaurant = new ObjectId(idRestaurant);
+      const restaurant = await RestaurantsModel.findById({ _id: idRestaurant });
+      if (!restaurant)
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Restaurant not found" });
       // change idCustomer to ObjectId
       if (idCustomer && !ObjectId.isValid(idCustomer)) {
         return res
@@ -67,32 +74,47 @@ const reservationsController = {
   },
   getReservations: async (req, res) => {
     try {
-      const { idCustomer } = req.body;
-      // check if idCustomer is a valid ObjectId
-      if (!idCustomer || !ObjectId.isValid(idCustomer)) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ error: "Invalid customer id" });
-      }
+      const idCustomer = new ObjectId(req.user.id);
       const reservations = await reservationsModel.find({ idCustomer });
-      if (reservations === null || reservations.length === 0) {
-        res
-          .status(StatusCodes.NOT_FOUND)
-          .json({ error: "No reservation found" });
-      } else
-        res
+      // if no reservation found, return null message
+      if (reservations.length === 0) {
+        return res
           .status(StatusCodes.OK)
-          .json({ reservations, massage: "get reservation success" });
+          .json({ reservations, message: "No reservation" });
+      }
+      // get restaurant ids from reservations
+      const restaurantIds = reservations.map((item) => item.idRestaurant);
+      // get restaurants by ids
+      const restaurants = await RestaurantsModel.find({
+        _id: { $in: restaurantIds },
+      });
+      // get restaurant names and addresses and phoneNumber from restaurants
+      const detailReservations = reservations.map((i) => {
+        const restaurant = restaurants.find(
+          (i2) => i2._id.toString() === i.idRestaurant.toString()
+        );
+        return {
+          ...i._doc,
+          restaurantName: restaurant.name,
+          restaurantAddress: restaurant.address,
+          restaurantPhoneNumber: restaurant.phoneNumber,
+        };
+      });
+      return res.status(StatusCodes.OK).json({
+        reservations: detailReservations,
+        massage: "get reservation success",
+      });
     } catch (error) {
       console.log(error);
-      res
+      return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
     }
   },
   cancelReservation: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { idReservation } = req.body;
+      const id = idReservation;
       // check if id is a valid ObjectId
       if (!ObjectId.isValid(id)) {
         return res
@@ -127,6 +149,49 @@ const reservationsController = {
     } catch (error) {
       console.log(error);
       res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ error: "Server error" });
+    }
+  },
+  getReservationById: async (req, res) => {
+    try {
+      const id = req.params.id;
+      if (!ObjectId.isValid(id)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid reservation id" });
+      }
+      const reservation = await reservationsModel.findById({ _id: id });
+      if (!reservation) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Reservation not found" });
+      }
+      const { order, tableIds } = reservation;
+      const IdMenus = order.map((item) => item.idMenu);
+      const menus = await menuModel.find({ _id: { $in: IdMenus } });
+      const tables = await tablesModel.find({ _id: { $in: tableIds } });
+      reservation.order = order.map((item) => {
+        const menu = menus.find(
+          (i) => i._id.toString() === item.idMenu.toString()
+        );
+        console.log(menu, item);
+        return {
+          name: menu.name,
+          images: menu.images,
+          type: menu.type,
+          ...item,
+        };
+      });
+      return res.status(StatusCodes.OK).json({
+        reservation,
+        tables,
+        menus,
+        message: "get reservation success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
     }

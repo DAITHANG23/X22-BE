@@ -30,6 +30,30 @@ const RestaurantsSchema = mongoose.Schema({
     enum: [0, 1, 2, 3, 4, 5, 6],
     require: false,
   },
+  description: {
+    type: String,
+    require: false,
+  },
+  minPrice: {
+    type: Number,
+    require: false,
+  },
+  maxPrice: {
+    type: Number,
+    require: false,
+  },
+  description: {
+    type: String,
+    require: false,
+  },
+  minPrice: {
+    type: Number,
+    require: false,
+  },
+  maxPrice: {
+    type: Number,
+    require: false,
+  },
   timeStart: {
     type: String,
     require: true,
