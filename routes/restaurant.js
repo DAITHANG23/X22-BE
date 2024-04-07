@@ -18,8 +18,11 @@ restaurantRouter.post(
 // GET ALL restaurant
 restaurantRouter.get("/", restaurantController.getAllRestaurant);
 
-restaurantRouter.get("/search", restaurantController.getRestaurantByName);
+// restaurantRouter.get("/", restaurantController.getRestaurantByName);
 
 restaurantRouter.get("/:id", restaurantController.getRestaurantById);
+
+// rating
+restaurantRouter.post("/reviews", restaurantController.ratingRestaurant);
 
 export default restaurantRouter;

@@ -4,7 +4,7 @@ import { format } from "date-fns";
 const RatingSchema = mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "users",
+    ref: "Customers",
     required: true,
   },
   restaurant: {
@@ -14,9 +14,12 @@ const RatingSchema = mongoose.Schema({
   },
   ratings: {
     type: Number,
-    required: true,
     min: 1,
     max: 5,
+  },
+  comment: {
+    type: String,
+    require: false,
   },
   createdAt: {
     type: String,
@@ -24,6 +27,6 @@ const RatingSchema = mongoose.Schema({
   },
 });
 
-const RatingModel = mongoose.model("ratings", RatingSchema);
+const RatingModel = mongoose.model("Ratings", RatingSchema);
 
 export default RatingModel;

@@ -6,30 +6,29 @@ const RestaurantsSchema = mongoose.Schema({
     require: true,
   },
   phoneNumber: {
-    type: Number,
+    type: String,
     require: true,
   },
   address: {
     type: String,
     require: true,
   },
-  images: {
-    type: Array,
+  image: {
+    type: String,
     require: false,
   },
-  avgRate: {
-    type: Number,
-    require: false,
+  imageUrl: {
+    type: String,
   },
   type: {
     type: Number,
     enum: [0, 1, 2, 3, 4, 5, 6],
-    require: true,
+    require: false,
   },
   taste: {
     type: Number,
     enum: [0, 1, 2, 3, 4, 5, 6],
-    require: true,
+    require: false,
   },
   timeStart: {
     type: String,
@@ -37,6 +36,14 @@ const RestaurantsSchema = mongoose.Schema({
   },
   timeEnd: {
     type: String,
+    require: true,
+  },
+  minPrice: {
+    type: Number,
+    require: true,
+  },
+  maxPrice: {
+    type: Number,
     require: true,
   },
 });
