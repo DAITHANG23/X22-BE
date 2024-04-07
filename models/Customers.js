@@ -35,6 +35,13 @@ const CustomersSchema = mongoose.Schema({
     enum: [0, 1, 2],
     require: true,
   },
+  // SAVE THE RATING
+  ratings: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ratings",
+    },
+  ],
 });
 
 const CustomersModel = mongoose.model("Customers", CustomersSchema);

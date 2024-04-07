@@ -43,8 +43,7 @@ const UserSchema = mongoose.Schema({
     {
       restaurantId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "restaurants",
-        require: false,
+        ref: "Restaurants",
       },
     },
   ],

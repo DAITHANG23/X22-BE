@@ -3,11 +3,21 @@ import RestaurantsModel from "../models/Restaurants.js";
 import MenuModel from "../models/Menu.js";
 import { ObjectId } from "mongodb";
 import removeAccents from "remove-accents";
+import CustomersModel from "../models/Customers.js";
+import RatingModel from "../models/Rating.js";
 
 const restaurantController = {
   createRestaurant: async (req, res) => {
     try {
-      const { name, phoneNumber, address } = req.body;
+      const {
+        name,
+        phoneNumber,
+        address,
+        timeStart,
+        timeEnd,
+        minPrice,
+        maxPrice,
+      } = req.body;
 
       // Validate required fields
       if (!name) {
@@ -27,6 +37,22 @@ const restaurantController = {
       if (!address) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "You need to provide the address of the restaurant",
+          data: null,
+        });
+      }
+
+      if (!timeStart || !timeEnd) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message:
+            "You need to provide both opening and closing times of the restaurant",
+          data: null,
+        });
+      }
+
+      if (!minPrice || !maxPrice) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message:
+            "You need to provide both minPrice and maxPrice of the restaurant",
           data: null,
         });
       }
@@ -59,11 +85,51 @@ const restaurantController = {
   getAllRestaurant: async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+
+    const { name, address, timeStart, timeEnd, targetPrice } = req.query;
+
+    let query = {}; // Khởi tạo một đối tượng truy vấn trống
+
+    // Nếu có tên được cung cấp, thêm điều kiện tìm kiếm theo tên vào truy vấn
+    if (name) {
+      const nameWithoutAccents = removeAccents.remove(name);
+      query.$or = [
+        { name: { $regex: new RegExp(name, "i") } },
+        { name: { $regex: new RegExp(nameWithoutAccents, "i") } },
+      ];
+    }
+
+    // Nếu có địa chỉ được cung cấp, thêm điều kiện tìm kiếm theo địa chỉ vào truy vấn
+    if (address) {
+      const addressWithoutAccents = removeAccents.remove(address);
+
+      if (!query.$or) {
+        query.$or = [];
+      }
+      query.$or.push(
+        { address: { $regex: new RegExp(address, "i") } },
+        { address: { $regex: new RegExp(addressWithoutAccents, "i") } }
+      );
+    }
+
+    if (targetPrice) {
+      query.minPrice = { $lte: targetPrice };
+      query.maxPrice = { $gte: targetPrice };
+    }
+
+    if (timeStart && timeEnd) {
+      query.timeStart = { $lte: timeStart };
+      query.timeEnd = { $gte: timeEnd };
+    }
+
     try {
-      const totalDocuments = await RestaurantsModel.countDocuments();
+      // const queryRestaurant = RestaurantsModel.find(query);
+      const totalDocuments = await RestaurantsModel.find(
+        query
+      ).countDocuments();
       const totalPages = Math.ceil(totalDocuments / limit);
       const skip = (page - 1) * limit;
-      const allRestaurant = await RestaurantsModel.find()
+      const allRestaurant = await RestaurantsModel.find(query)
         .skip(skip)
         .limit(limit);
 
@@ -86,65 +152,6 @@ const restaurantController = {
     }
   },
 
-  getRestaurantByName: async (req, res) => {
-    const { name, address } = req.query;
-    try {
-      let query = {}; // Khởi tạo một đối tượng truy vấn trống
-
-      // Nếu có tên được cung cấp, thêm điều kiện tìm kiếm theo tên vào truy vấn
-      if (name) {
-        const nameWithoutAccents = removeAccents.remove(name);
-        query.$or = [
-          { name: { $regex: new RegExp(name, "i") } },
-          { name: { $regex: new RegExp(nameWithoutAccents, "i") } },
-        ];
-      }
-
-      // Nếu có địa chỉ được cung cấp, thêm điều kiện tìm kiếm theo địa chỉ vào truy vấn
-      if (address) {
-        const addressWithoutAccents = removeAccents.remove(address);
-
-        console.log(addressWithoutAccents);
-        if (!query.$or) {
-          query.$or = [];
-        }
-        query.$or.push(
-          { address: { $regex: new RegExp(address, "i") } },
-          { address: { $regex: new RegExp(addressWithoutAccents, "i") } }
-        );
-      }
-
-      // Thực hiện truy vấn với các điều kiện tìm kiếm
-      const restaurant = await RestaurantsModel.find(query);
-
-      if (restaurant.length === 0) {
-        let message = "No restaurant found.";
-        // Xây dựng thông điệp phản hồi dựa trên các trường được cung cấp
-        if (name && address) {
-          message = `Restaurant with name '${name}' and address '${address}' not found.`;
-        } else if (name) {
-          message = `Restaurant with name '${name}' not found.`;
-        } else if (address) {
-          message = `Restaurant with address '${address}' not found.`;
-        }
-
-        return res.status(StatusCodes.NOT_FOUND).json({
-          message: message,
-        });
-      }
-
-      res.status(StatusCodes.OK).json({
-        message: `Get Restaurant by Name Success`,
-        data: restaurant,
-      });
-    } catch (error) {
-      console.error("Error getting restaurant by name:", error);
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        error: error.message,
-      });
-    }
-  },
   getRestaurantById: async (req, res) => {
     try {
       let { id } = req.params;
@@ -174,6 +181,63 @@ const restaurantController = {
       res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
+    }
+  },
+
+  ratingRestaurant: async (req, res) => {
+    try {
+      const { userId, restaurantId, ratings, comment } = req.body;
+
+      // Kiểm tra xem người dùng có tồn tại không
+      const existingUser = await CustomersModel.findById(userId);
+      if (!existingUser) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ message: "User not found" });
+      }
+
+      // Kiểm tra xem nhà hàng có tồn tại không
+      const existingRestaurant = await RestaurantsModel.findById(restaurantId);
+      if (!existingRestaurant) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ message: "Restaurant not found" });
+      }
+
+      // Tạo một bản ghi mới cho đánh giá
+      const newRating = new RatingModel({
+        user: userId,
+        restaurant: restaurantId,
+        ratings,
+        comment,
+      });
+
+      // Lưu bản ghi đánh giá vào cơ sở dữ liệu
+      await newRating.save();
+
+      // Thêm đánh giá vào nhà hàng
+      existingRestaurant.ratings.push(newRating._id);
+      await existingRestaurant.save();
+
+      // Thêm đánh giá vào thông tin của người dùng
+      existingUser.ratings.push(newRating._id);
+      await existingUser.save();
+
+      // Trả về thông báo thành công
+      res.status(StatusCodes.OK).json({
+        message: "Rate Restaurant Success",
+        data: {
+          id: newRating._id,
+          ratings: newRating.ratings,
+          comment: newRating.comment,
+        },
+      });
+    } catch (error) {
+      console.error("Error rating restaurant:", error);
+      // Trả về thông báo lỗi nếu có lỗi xảy ra
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ message: "Internal Server Error", error: error.message });
     }
   },
 };

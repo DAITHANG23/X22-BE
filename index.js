@@ -34,8 +34,8 @@ app.use("/reservations", reservationsRouter);
 app.listen(port, () => {
   console.log(`Server has been run on port ${port}!`);
 });
-process.on("SIGINT", () => {
-  server.close(() => {
-    console.log(`Exit Server Express`);
-  });
-});
+// process.on("SIGINT", () => {
+//   server.close(() => {
+//     console.log(`Exit Server Express`);
+//   });
+// });
