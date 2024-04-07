@@ -6,7 +6,7 @@ const RestaurantsSchema = mongoose.Schema({
     require: true,
   },
   phoneNumber: {
-    type: Number,
+    type: String,
     require: true,
   },
   address: {
@@ -30,6 +30,18 @@ const RestaurantsSchema = mongoose.Schema({
     type: Number,
     enum: [0, 1, 2, 3, 4, 5, 6],
     require: true,
+  },
+  description: {
+    type: String,
+    require: false,
+  },
+  minPrice: {
+    type: Number,
+    require: false,
+  },
+  maxPrice: {
+    type: Number,
+    require: false,
   },
   timeStart: {
     type: String,
