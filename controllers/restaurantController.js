@@ -9,6 +9,7 @@ import RatingModel from "../models/Rating.js";
 const restaurantController = {
   createRestaurant: async (req, res) => {
     try {
+
       const {
         name,
         phoneNumber,

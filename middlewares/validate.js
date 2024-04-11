@@ -30,8 +30,8 @@ const validateMiddlewares = {
       return;
     }
     // Check if phone number is valid
-    // phone number is type string and it must start with 0, then 10 digits
-    const phoneNumberRegex = /^0\d{9}$/;
+    // phone number is a string of digits with length 10 or 12
+    const phoneNumberRegex = /^\d{10}$|^\d{12}$/;
     if (!phoneNumberRegex.test(phoneNumber)) {
       res.status(StatusCodes.BAD_REQUEST).json({
         message: "Phone number is not valid",
