@@ -30,10 +30,9 @@ const userController = {
         !address ||
         !role
       ) {
-        res
+        return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Please provide information" });
-        return;
       }
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -53,14 +52,12 @@ const userController = {
       const token = createAccessToken(newUser);
 
       // Send response
-      res
+      return res
         .status(StatusCodes.CREATED)
         .json({ token, data: newUser, userId: newUser._id });
     } catch (error) {
       console.error(error);
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ error: "Server error" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
     }
   },
   loginUser: async (req, res) => {
@@ -70,26 +67,26 @@ const userController = {
       let user = await CustomersModel.findOne({ email });
       if (!user) user = await EmployeesModel.findOne({ email });
       if (!user) {
-        res.status(StatusCodes.NOT_FOUND).json({ message: "User not found" });
-        return;
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ message: "User not found" });
       }
       // Check password
       let isMatch = await bcrypt.compare(password, user.password);
       if (password === user.password) isMatch = true;
       if (!isMatch) {
-        res
+        return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Invalid password" });
-        return;
       }
       // Create access token
       const token = createAccessToken(user);
-      res.status(StatusCodes.OK).json({ token, message: "Login successfully" });
+      return res
+        .status(StatusCodes.OK)
+        .json({ token, message: "Login successfully" });
     } catch (error) {
-      console.log(error);
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ error: "Server error" });
+      console.error(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
     }
   },
   getToken: async (req, res) => {
@@ -99,14 +96,16 @@ const userController = {
       const token = req.headers.authorization.split(" ")[1];
       // check if token is provided
       if (!token) {
-        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
-        return;
+        return res
+          .status(StatusCodes.UNAUTHORIZED)
+          .json({ message: "Unauthorized" });
       }
       // check token is valid
       const checkToken = verifyToken(token);
       if (!checkToken) {
-        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
-        return;
+        return res
+          .status(StatusCodes.UNAUTHORIZED)
+          .json({ message: "Unauthorized" });
       }
       // decode token
       const decoded = decodeToken(token);
@@ -114,14 +113,27 @@ const userController = {
       const newToken = createAccessToken(decoded);
       // delete old token
       // send response
-      res
+      return res
         .status(StatusCodes.OK)
         .json({ newToken, decoded, message: "Token refreshed" });
     } catch (error) {
       console.error(error);
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ error: "Server error" });
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
+    }
+  },
+  getProfile: async (req, res) => {
+    try {
+      const { role, id } = req.user;
+      if (role === 2) {
+        const customer = await CustomersModel.findById(id);
+        return res.status(StatusCodes.OK).json(customer);
+      } else {
+        const employee = await EmployeesModel.findById(id);
+        return res.status(StatusCodes.OK).json(employee);
+      }
+    } catch (error) {
+      console.error(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
     }
   },
 };
