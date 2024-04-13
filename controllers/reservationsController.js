@@ -5,6 +5,7 @@ import reservationsModel from "../models/Reservations.js";
 import RestaurantsModel from "../models/Restaurants.js";
 import tablesModel from "../models/Tables.js";
 import menuModel from "../models/Menu.js";
+
 const reservationsController = {
   createNewReservation: async (req, res) => {
     try {
@@ -70,6 +71,52 @@ const reservationsController = {
       res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
+    }
+  },
+  updateReservation: async (req, res) => {
+    try {
+      const _id = new ObjectId(req.params.id);
+      let { name, phoneNumber, idRestaurant, time, people, order, note } =
+        req.body;
+      if (!name || !phoneNumber || !idRestaurant || !time || !people) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Missing required fields" });
+      }
+      if (!ObjectId.isValid(idRestaurant)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid restaurant id" });
+      } else idRestaurant = new ObjectId(idRestaurant);
+      const reservation = await reservationsModel.findById({ _id });
+      if (!reservation) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Reservation not found" });
+      }
+      if (reservation.idRestaurant.toString() !== idRestaurant.toString()) {
+        return res.status(StatusCodes.FORBIDDEN).json({ error: "Forbidden" });
+      }
+      if (reservation.status !== 0 && reservation.status !== 1) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Cannot update reservation" });
+      }
+      const updateReservation = {
+        name,
+        phoneNumber,
+        idRestaurant,
+        time,
+        people,
+        order,
+        note,
+        status: 0,
+      };
+      await reservationsModel.findByIdAndUpdate({ _id }, updateReservation);
+      res.status(StatusCodes.OK).json({ message: "Reservation updated" });
+    } catch (error) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ error: "Bad request" });
     }
   },
   getReservations: async (req, res) => {
@@ -155,7 +202,7 @@ const reservationsController = {
   },
   getReservationById: async (req, res) => {
     try {
-      const id = req.params.id;
+      const id = new ObjectId(req.params.id);
       if (!ObjectId.isValid(id)) {
         return res
           .status(StatusCodes.BAD_REQUEST)
@@ -180,7 +227,7 @@ const reservationsController = {
           name: menu.name,
           images: menu.images,
           type: menu.type,
-          ...item,
+          ...item._doc,
         };
       });
       return res.status(StatusCodes.OK).json({
@@ -194,6 +241,170 @@ const reservationsController = {
       return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ error: "Server error" });
+    }
+  },
+  getReservationsByEmployee: async (req, res) => {
+    try {
+      const idRestaurant = new ObjectId(req.restaurant);
+      const reservations = await reservationsModel.find({ idRestaurant });
+      // get customer ids from reservations
+      const customerIds = reservations.map((item) => item.idCustomer);
+      // get customers by ids
+      const customers = await CustomersModel.find({
+        _id: { $in: customerIds },
+      });
+      // get customer names and phoneNumbers from customers
+      const detailReservations = reservations.map((i) => {
+        const customer = customers.find(
+          (i2) => i2._id.toString() === i.idCustomer.toString()
+        );
+        if (!customer) return i;
+        else
+          return {
+            ...i._doc,
+            customerName: customer.name,
+            customerPhoneNumber: customer.phoneNumber,
+          };
+      });
+      return res.status(StatusCodes.OK).json({
+        reservations: detailReservations,
+        massage: "get reservation success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD_REQUEST" });
+    }
+  },
+  confirmReservation: async (req, res) => {
+    try {
+      const { idReservation } = req.body;
+      const id = new ObjectId(idReservation);
+      // check if id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid reservation id" });
+      }
+      // find reservation by id
+      const reservation = await reservationsModel.findById({ _id: id });
+      // check if reservation exists
+      if (!reservation) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Reservation not found" });
+      }
+      // check idRestaurant from req is equal to idRestaurant from reservation
+      if (req.restaurant.toString() !== reservation.idRestaurant.toString()) {
+        return res.status(StatusCodes.FORBIDDEN).json({ error: "Forbidden" });
+      }
+      // check if reservation is in status 0 or 1
+      if (reservation.status === 0) {
+        // update reservation status to 1 (confirmed)
+        await reservationsModel.findByIdAndUpdate(
+          { _id: id },
+          { status: 1 },
+          { new: true }
+        );
+        // return success message
+        return res
+          .status(StatusCodes.OK)
+          .json({ message: "Reservation confirmed" });
+      } else {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Cannot confirm reservation" });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Bad Request" });
+    }
+  },
+  checkInReservation: async (req, res) => {
+    try {
+      const { idReservation } = req.body;
+      const id = new ObjectId(idReservation);
+      // check if id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid reservation id" });
+      }
+      // find reservation by id
+      const reservation = await reservationsModel.findById({ _id: id });
+      // check if reservation exists
+      if (!reservation) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Reservation not found" });
+      }
+      // check idRestaurant from req is equal to idRestaurant from reservation
+      if (req.restaurant.toString() !== reservation.idRestaurant.toString()) {
+        return res.status(StatusCodes.FORBIDDEN).json({ error: "Forbidden" });
+      }
+      // check if reservation is in status 0 or 1
+      if (reservation.status === 0 || reservation.status === 1) {
+        // update reservation status to 2 (checked in)
+        await reservationsModel.findByIdAndUpdate(
+          { _id: id },
+          { status: 2 },
+          { new: true }
+        );
+        // return success message
+        return res
+          .status(StatusCodes.OK)
+          .json({ message: "Reservation checkined" });
+      } else {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Cannot checkin reservation" });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Bad Request" });
+    }
+  },
+  checkOutReservation: async (req, res) => {
+    try {
+      const { idReservation } = req.body;
+      const id = new ObjectId(idReservation);
+      // check if id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Invalid reservation id" });
+      }
+      // find reservation by id
+      const reservation = await reservationsModel.findById({ _id: id });
+      // check if reservation exists
+      if (!reservation) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ error: "Reservation not found" });
+      }
+      // check idRestaurant from req is equal to idRestaurant from reservation
+      if (req.restaurant.toString() !== reservation.idRestaurant.toString()) {
+        return res.status(StatusCodes.FORBIDDEN).json({ error: "Forbidden" });
+      }
+      // check if reservation is in status 2
+      if (reservation.status === 2) {
+        // update reservation status to 3 (checked in)
+        await reservationsModel.findByIdAndUpdate(
+          { _id: id },
+          { status: 3 },
+          { new: true }
+        );
+        // return success message
+        return res
+          .status(StatusCodes.OK)
+          .json({ message: "Reservation checkouted" });
+      } else {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Cannot checkout reservation" });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "Bad Request" });
     }
   },
 };

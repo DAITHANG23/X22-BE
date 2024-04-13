@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 const createAccessToken = (document) => {
   const payload = {
     id: document._id,
+    role: document.role,
   };
   const newToken = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: "24h",
