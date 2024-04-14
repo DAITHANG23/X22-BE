@@ -8,28 +8,17 @@ const userController = {
   createNewUser: async (req, res) => {
     try {
       // Destructure relevant fields from req.body
-      const { email, password, name, phoneNumber, gender, address, role } =
-        req.body;
+      const { email, password, name, phoneNumber, role } = req.body;
 
       // Initialize createUser object
       const createUser = {
         email,
         name,
         phoneNumber,
-        gender,
-        address,
         role,
       };
-      // Check email, name, phoneNumber, gender, address, role is provided
-      if (
-        !email ||
-        !password ||
-        !name ||
-        !phoneNumber ||
-        !gender ||
-        !address ||
-        !role
-      ) {
+      // Check email, name, phoneNumber, gender,  role is provided
+      if (!email || !password || !name || !phoneNumber || !role) {
         return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Please provide information" });
@@ -83,7 +72,7 @@ const userController = {
       const token = createAccessToken(user);
       return res
         .status(StatusCodes.OK)
-        .json({ token, message: "Login successfully" });
+        .json({ token, role: user.role, message: "Login successfully" });
     } catch (error) {
       console.error(error);
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
