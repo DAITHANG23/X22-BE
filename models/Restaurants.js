@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { RestaurantType } from "./constants.js";
+import { format } from "date-fns";
+
 const RestaurantsSchema = mongoose.Schema({
   name: {
     type: String,
@@ -13,34 +14,11 @@ const RestaurantsSchema = mongoose.Schema({
     type: String,
     require: true,
   },
-  image: {
-    type: String,
-    require: false,
-  },
-  imageUrl: {
-    type: String,
-  },
+  images: [String],
   type: {
-    type: Number,
-    enum: [0, 1, 2, 3, 4, 5, 6],
-    require: false,
-  },
-  taste: {
-    type: Number,
-    enum: [0, 1, 2, 3, 4, 5, 6],
-    require: false,
-  },
-  description: {
     type: String,
-    require: false,
-  },
-  minPrice: {
-    type: Number,
-    require: false,
-  },
-  maxPrice: {
-    type: Number,
-    require: false,
+    enum: ["euro", "china", "vietnam", "japan", "korean"],
+    required: false,
   },
   description: {
     type: String,
@@ -62,13 +40,13 @@ const RestaurantsSchema = mongoose.Schema({
     type: String,
     require: true,
   },
-  minPrice: {
-    type: Number,
-    require: true,
+  createdAt: {
+    type: String,
+    default: format(new Date(), "MMM dd, yyyy, p"),
   },
-  maxPrice: {
-    type: Number,
-    require: true,
+  updatedAt: {
+    type: String,
+    default: format(new Date(), "MMM dd, yyyy, p"),
   },
 });
 

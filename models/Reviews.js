@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { format } from "date-fns";
 
 const ReviewsSchema = mongoose.Schema({
   name: {
@@ -28,6 +29,14 @@ const ReviewsSchema = mongoose.Schema({
   reviewText: {
     type: String,
     required: true,
+  },
+  createdAt: {
+    type: String,
+    default: format(new Date(), "MMM dd, yyyy, p"),
+  },
+  updatedAt: {
+    type: String,
+    default: format(new Date(), "MMM dd, yyyy, p"),
   },
 });
 

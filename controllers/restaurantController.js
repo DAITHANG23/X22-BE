@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 import removeAccents from "remove-accents";
 import CustomersModel from "../models/Customers.js";
 import RatingModel from "../models/Rating.js";
+import cloudinary from "../middlewares/cloudinary.config.js";
 
 const restaurantController = {
   createRestaurant: async (req, res) => {
@@ -18,7 +19,10 @@ const restaurantController = {
         timeEnd,
         minPrice,
         maxPrice,
+        description,
+        type,
       } = req.body;
+      const files = req.files;
 
       // Validate required fields
       if (!name) {
@@ -42,6 +46,20 @@ const restaurantController = {
         });
       }
 
+      if (!description) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "You need to provide the description of the restaurant",
+          data: null,
+        });
+      }
+
+      if (!type) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "You need to provide the type of the restaurant",
+          data: null,
+        });
+      }
+
       if (!timeStart || !timeEnd) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message:
@@ -58,14 +76,26 @@ const restaurantController = {
         });
       }
 
-      // Handle file upload if a file exists
-      if (req.file) {
-        req.body.image = req.file.path;
-        req.body.imageUrl = `http://localhost:3002/${req.file.path}`;
-      }
+      const imageUrls = await Promise.all(
+        files.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path);
+          return result.secure_url;
+        })
+      );
 
       // Create Restaurant
-      const newRestaurant = await RestaurantsModel.create(req.body);
+      const newRestaurant = await RestaurantsModel.create({
+        name,
+        phoneNumber,
+        address,
+        timeStart,
+        timeEnd,
+        minPrice,
+        maxPrice,
+        description,
+        type,
+        images: imageUrls, // Push the image URL to the image array
+      });
 
       // Save the new restaurant to the database
       const savedRestaurant = await newRestaurant.save();
@@ -79,6 +109,93 @@ const restaurantController = {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Failed to create restaurant",
         error: error.message, // Include the error message in the response
+      });
+    }
+  },
+
+  editRestaurant: async (req, res) => {
+    try {
+      const { id } = req.params; // Extract restaurant ID from URL params
+      const {
+        name,
+        phoneNumber,
+        address,
+        timeStart,
+        timeEnd,
+        minPrice,
+        maxPrice,
+        description,
+        type,
+      } = req.body;
+      const files = req.files; // Assuming you're uploading new images
+
+      // Validate that at least one field is being updated
+      if (
+        !name &&
+        !phoneNumber &&
+        !address &&
+        !timeStart &&
+        !timeEnd &&
+        !minPrice &&
+        !maxPrice &&
+        !description &&
+        !type &&
+        (!files || files.length === 0) // No files uploaded
+      ) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "At least one field or image is required for update",
+          data: null,
+        });
+      }
+
+      // If files are uploaded, upload them to Cloudinary and get image URLs
+      let imageUrls = [];
+      if (files && files.length > 0) {
+        imageUrls = await Promise.all(
+          files.map(async (file) => {
+            const result = await cloudinary.uploader.upload(file.path);
+            return result.secure_url;
+          })
+        );
+      }
+
+      // Find the restaurant by ID and update its information
+      const updatedRestaurant = await RestaurantsModel.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            name,
+            phoneNumber,
+            address,
+            timeStart,
+            timeEnd,
+            minPrice,
+            maxPrice,
+            description,
+            type,
+            $push: { images: { $each: imageUrls } }, // Add new image URLs to the images array
+          },
+        },
+        { new: true } // Return the updated document
+      );
+
+      // Check if the restaurant exists
+      if (!updatedRestaurant) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: "Restaurant not found",
+          data: null,
+        });
+      }
+
+      return res.status(StatusCodes.OK).json({
+        message: "Restaurant updated successfully",
+        data: updatedRestaurant,
+      });
+    } catch (error) {
+      console.error("Error updating restaurant:", error);
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Failed to update restaurant",
+        error: error.message,
       });
     }
   },
@@ -205,6 +322,18 @@ const restaurantController = {
           .json({ message: "Restaurant not found" });
       }
 
+      if (ratings < 1 || ratings > 5) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Rating must be in range",
+        });
+      }
+
+      if (comment?.length > 256) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Comment must be in range",
+        });
+      }
+
       // Tạo một bản ghi mới cho đánh giá
       const newRating = new RatingModel({
         user: userId,
@@ -215,14 +344,6 @@ const restaurantController = {
 
       // Lưu bản ghi đánh giá vào cơ sở dữ liệu
       await newRating.save();
-
-      // Thêm đánh giá vào nhà hàng
-      existingRestaurant.ratings.push(newRating._id);
-      await existingRestaurant.save();
-
-      // Thêm đánh giá vào thông tin của người dùng
-      existingUser.ratings.push(newRating._id);
-      await existingUser.save();
 
       // Trả về thông báo thành công
       res.status(StatusCodes.OK).json({
@@ -236,6 +357,27 @@ const restaurantController = {
     } catch (error) {
       console.error("Error rating restaurant:", error);
       // Trả về thông báo lỗi nếu có lỗi xảy ra
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+  },
+
+  getAllRatingByRestaurantId: async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+
+      // Find all ratings for the specified restaurant ID
+      const ratings = await RatingModel.find().populate("user", "name");
+
+      // Return the ratings
+      res.status(StatusCodes.OK).json({
+        message: "All Ratings Retrieved Successfully",
+        data: ratings,
+      });
+    } catch (error) {
+      console.error("Error retrieving ratings:", error);
+      // Return an error message if there's an error
       res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ message: "Internal Server Error", error: error.message });
