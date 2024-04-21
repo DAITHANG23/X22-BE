@@ -35,6 +35,8 @@ restaurantRouter.put(
 // GET ALL restaurant
 restaurantRouter.get("/", restaurantController.getAllRestaurant);
 
+restaurantRouter.get("/top", restaurantController.getTopRestaurants);
+
 // GET RESTAURANT BY ID
 restaurantRouter.get("/:id", restaurantController.getRestaurantById);
 
