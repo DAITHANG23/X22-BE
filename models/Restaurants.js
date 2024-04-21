@@ -20,6 +20,8 @@ const RestaurantsSchema = mongoose.Schema({
     enum: ["euro", "china", "vietnam", "japan", "korean"],
     required: false,
   },
+  avgRate: Number,
+  reviews: Number,
   description: {
     type: String,
     require: false,
