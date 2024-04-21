@@ -6,11 +6,11 @@ import removeAccents from "remove-accents";
 import CustomersModel from "../models/Customers.js";
 import RatingModel from "../models/Rating.js";
 import cloudinary from "../middlewares/cloudinary.config.js";
+import mongoose from "mongoose";
 
 const restaurantController = {
   createRestaurant: async (req, res) => {
     try {
-
       const {
         name,
         phoneNumber,
@@ -344,6 +344,29 @@ const restaurantController = {
 
       // Lưu bản ghi đánh giá vào cơ sở dữ liệu
       await newRating.save();
+
+      const getAllRating = await RatingModel.aggregate([
+        { $match: { restaurant: new mongoose.Types.ObjectId(restaurantId) } },
+        {
+          $group: {
+            _id: null,
+            avgRate: { $avg: "$ratings" },
+            reviews: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Update the restaurant document with new average rating and total reviews
+      if (getAllRating.length > 0) {
+        const avgRate = getAllRating[0].avgRate;
+        const reviews = getAllRating[0].reviews;
+
+        // Update the restaurant document
+        await RestaurantsModel.findByIdAndUpdate(restaurantId, {
+          avgRate,
+          reviews,
+        });
+      }
 
       // Trả về thông báo thành công
       res.status(StatusCodes.OK).json({
