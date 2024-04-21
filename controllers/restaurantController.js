@@ -406,6 +406,27 @@ const restaurantController = {
         .json({ message: "Internal Server Error", error: error.message });
     }
   },
+
+  getTopRestaurants: async (req, res) => {
+    try {
+      // Fetch top 15 restaurants based on avgRate
+      const topRestaurants = await RestaurantsModel.find()
+        .sort({ avgRate: -1 }) // Sort in descending order based on avgRate
+        .limit(15); // Limit to 15 restaurants
+
+      // Return the top restaurants
+      res.status(StatusCodes.OK).json({
+        message: "Top 15 restaurants based on avgRate",
+        data: topRestaurants,
+      });
+    } catch (error) {
+      console.error("Error fetching top restaurants:", error);
+      // Return error message if an error occurs
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+  },
 };
 
 export default restaurantController;
