@@ -253,11 +253,15 @@ const reservationsController = {
       const customers = await CustomersModel.find({
         _id: { $in: customerIds },
       });
+
       // get customer names and phoneNumbers from customers
       const detailReservations = reservations.map((i) => {
-        const customer = customers.find(
-          (i2) => i2._id.toString() === i.idCustomer.toString()
-        );
+        let customer;
+        if (i.idCustomer) {
+          customer = customers.find(
+            (i2) => i2._id.toString() === i.idCustomer.toString()
+          );
+        }
         if (!customer) return i;
         else
           return {

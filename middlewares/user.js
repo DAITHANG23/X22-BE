@@ -7,7 +7,7 @@ const middlewares = {
     try {
       const { email, password, name, role } = req.body;
       // Check if email, password, name, role is provided
-      if (!email || !password || !name || !role) {
+      if (!email || !password || !name || role === undefined) {
         res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please provide information",
         });

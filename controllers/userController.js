@@ -8,17 +8,25 @@ const userController = {
   createNewUser: async (req, res) => {
     try {
       // Destructure relevant fields from req.body
-      const { email, password, name, phoneNumber, role } = req.body;
-
-      // Initialize createUser object
-      const createUser = {
+      const {
         email,
+        password,
         name,
         phoneNumber,
         role,
-      };
+        idRestaurant = null,
+      } = req.body;
+
+      // Initialize createUser object
+      // idRestaurant is optional and only for employee
+      let createUser;
+      if (role === 2) {
+        createUser = { email, password, name, phoneNumber, role };
+      } else {
+        createUser = { email, password, name, phoneNumber, role, idRestaurant };
+      }
       // Check email, name, phoneNumber, gender,  role is provided
-      if (!email || !password || !name || !phoneNumber || !role) {
+      if (!email || !password || !name || !phoneNumber || role === undefined) {
         return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Please provide information" });
@@ -33,7 +41,6 @@ const userController = {
       let newUser = null;
       if (role === 2) newUser = new CustomersModel(createUser);
       else newUser = new EmployeesModel(createUser);
-
       // Save the user to the database
       await newUser.save();
 
@@ -120,6 +127,26 @@ const userController = {
         const employee = await EmployeesModel.findById(id);
         return res.status(StatusCodes.OK).json(employee);
       }
+    } catch (error) {
+      console.error(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
+    }
+  },
+  getEmployee: async (req, res) => {
+    try {
+      const { role, id } = req.user;
+      if (role !== 0) {
+        return res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden" });
+      }
+      const employer = await EmployeesModel.findById(id);
+      const { idRestaurant } = employer;
+      if (!idRestaurant) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "NO Restaurant" });
+      }
+      const employees = await EmployeesModel.find({ idRestaurant });
+      return res.status(StatusCodes.OK).json(employees);
     } catch (error) {
       console.error(error);
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });

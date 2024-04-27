@@ -27,6 +27,8 @@ userRouter.post(
 
 userRouter.get("/profile", verifyToken.checklogin, userController.getProfile);
 
+userRouter.get("/employee", verifyToken.checklogin, userController.getEmployee);
+
 userRouter.get("/token", userController.getToken);
 
 userRouter.get("/varify", verifyToken.checklogin, userController.getToken);
