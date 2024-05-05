@@ -204,11 +204,13 @@ const restaurantController = {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const { name, address, timeStart, timeEnd, targetPrice } = req.query;
+    const { name, address, type, minPrice, maxPrice } = req.query;
 
-    let query = {}; // Khởi tạo một đối tượng truy vấn trống
+    let query = {}; // Initialize an empty query object
 
-    // Nếu có tên được cung cấp, thêm điều kiện tìm kiếm theo tên vào truy vấn
+    // Add conditions based on the provided query parameters
+
+    // If name is provided, add search condition for name
     if (name) {
       const nameWithoutAccents = removeAccents.remove(name);
       query.$or = [
@@ -217,7 +219,7 @@ const restaurantController = {
       ];
     }
 
-    // Nếu có địa chỉ được cung cấp, thêm điều kiện tìm kiếm theo địa chỉ vào truy vấn
+    // If address is provided, add search condition for address
     if (address) {
       const addressWithoutAccents = removeAccents.remove(address);
 
@@ -230,18 +232,20 @@ const restaurantController = {
       );
     }
 
-    if (targetPrice) {
-      query.minPrice = { $lte: targetPrice };
-      query.maxPrice = { $gte: targetPrice };
+    // Add conditions for targetPrice, timeStart, and timeEnd if needed
+
+    // Filter by type
+    if (type) {
+      query.type = type;
     }
 
-    if (timeStart && timeEnd) {
-      query.timeStart = { $lte: timeStart };
-      query.timeEnd = { $gte: timeEnd };
+    // Filter by minPrice and maxPrice
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      query.minPrice = { $gte: minPrice };
+      query.maxPrice = { $lte: maxPrice };
     }
 
     try {
-      // const queryRestaurant = RestaurantsModel.find(query);
       const totalDocuments = await RestaurantsModel.find(
         query
       ).countDocuments();
@@ -250,7 +254,6 @@ const restaurantController = {
       const allRestaurant = await RestaurantsModel.find(query)
         .skip(skip)
         .limit(limit);
-
       res.status(StatusCodes.OK).json({
         message: "Get All Restaurant Success",
         data: allRestaurant,
@@ -290,7 +293,7 @@ const restaurantController = {
       }
       // find menu by restaurant id and return array of menu items
       const menu = await MenuModel.find({ idRestaurant: id });
-      console.log(menu);
+
       res
         .status(StatusCodes.OK)
         .json({ data: { restaurant, menu }, message: "Restaurant by id" });
@@ -358,7 +361,7 @@ const restaurantController = {
 
       // Update the restaurant document with new average rating and total reviews
       if (getAllRating.length > 0) {
-        const avgRate = getAllRating[0].avgRate;
+        const avgRate = parseFloat(getAllRating[0].avgRate.toFixed(1));
         const reviews = getAllRating[0].reviews;
 
         // Update the restaurant document
@@ -391,7 +394,11 @@ const restaurantController = {
       const { restaurantId } = req.params;
 
       // Find all ratings for the specified restaurant ID
-      const ratings = await RatingModel.find().populate("user", "name");
+      const ratings = await RatingModel.find({
+        restaurant: restaurantId,
+      })
+        .populate("user", "name")
+        .sort({ createdAt: -1 });
 
       // Return the ratings
       res.status(StatusCodes.OK).json({
