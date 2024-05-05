@@ -206,11 +206,9 @@ const restaurantController = {
 
     const { name, address, type, minPrice, maxPrice } = req.query;
 
-    let query = {}; // Initialize an empty query object
+    let query = {}; // Khởi tạo một đối tượng truy vấn trống
 
-    // Add conditions based on the provided query parameters
-
-    // If name is provided, add search condition for name
+    // Nếu có tên được cung cấp, thêm điều kiện tìm kiếm theo tên vào truy vấn
     if (name) {
       const nameWithoutAccents = removeAccents.remove(name);
       query.$or = [
@@ -219,7 +217,7 @@ const restaurantController = {
       ];
     }
 
-    // If address is provided, add search condition for address
+    // Nếu có địa chỉ được cung cấp, thêm điều kiện tìm kiếm theo địa chỉ vào truy vấn
     if (address) {
       const addressWithoutAccents = removeAccents.remove(address);
 
@@ -231,8 +229,6 @@ const restaurantController = {
         { address: { $regex: new RegExp(addressWithoutAccents, "i") } }
       );
     }
-
-    // Add conditions for targetPrice, timeStart, and timeEnd if needed
 
     // Filter by type
     if (type) {
@@ -246,6 +242,7 @@ const restaurantController = {
     }
 
     try {
+      // const queryRestaurant = RestaurantsModel.find(query);
       const totalDocuments = await RestaurantsModel.find(
         query
       ).countDocuments();
@@ -254,6 +251,7 @@ const restaurantController = {
       const allRestaurant = await RestaurantsModel.find(query)
         .skip(skip)
         .limit(limit);
+
       res.status(StatusCodes.OK).json({
         message: "Get All Restaurant Success",
         data: allRestaurant,
@@ -293,7 +291,6 @@ const restaurantController = {
       }
       // find menu by restaurant id and return array of menu items
       const menu = await MenuModel.find({ idRestaurant: id });
-
       res
         .status(StatusCodes.OK)
         .json({ data: { restaurant, menu }, message: "Restaurant by id" });
@@ -361,7 +358,7 @@ const restaurantController = {
 
       // Update the restaurant document with new average rating and total reviews
       if (getAllRating.length > 0) {
-        const avgRate = parseFloat(getAllRating[0].avgRate.toFixed(1));
+        const avgRate = getAllRating[0].avgRate;
         const reviews = getAllRating[0].reviews;
 
         // Update the restaurant document

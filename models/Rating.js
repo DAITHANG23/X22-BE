@@ -23,7 +23,7 @@ const RatingSchema = mongoose.Schema({
   },
   createdAt: {
     type: String,
-    default: format(new Date(), "MMM dd, yyyy, p"),
+    default: () => format(new Date(), "MMM dd, yyyy, p"),
   },
 });
 
