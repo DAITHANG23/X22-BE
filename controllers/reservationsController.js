@@ -222,7 +222,7 @@ const reservationsController = {
         const menu = menus.find(
           (i) => i._id.toString() === item.idMenu.toString()
         );
-        console.log(menu, item);
+        if (!menu) return item;
         return {
           name: menu.name,
           images: menu.images,
