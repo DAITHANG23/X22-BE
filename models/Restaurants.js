@@ -26,14 +26,8 @@ const RestaurantsSchema = mongoose.Schema({
     type: String,
     require: false,
   },
-  minPrice: {
-    type: Number,
-    require: false,
-  },
-  maxPrice: {
-    type: Number,
-    require: false,
-  },
+  minPrice: Number,
+  maxPrice: Number,
   timeStart: {
     type: String,
     require: true,

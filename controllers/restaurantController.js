@@ -7,6 +7,7 @@ import CustomersModel from "../models/Customers.js";
 import RatingModel from "../models/Rating.js";
 import cloudinary from "../middlewares/cloudinary.config.js";
 import mongoose from "mongoose";
+import EmployeesModel from "../models/Employees.js";
 
 const restaurantController = {
   createRestaurant: async (req, res) => {
@@ -100,6 +101,12 @@ const restaurantController = {
       // Save the new restaurant to the database
       const savedRestaurant = await newRestaurant.save();
 
+      // Assign this restaurant's ID to all employees
+      await EmployeesModel.updateMany(
+        {},
+        { idRestaurant: savedRestaurant._id }
+      );
+
       return res.status(StatusCodes.CREATED).json({
         message: "Restaurant created successfully!",
         data: savedRestaurant,
@@ -126,6 +133,7 @@ const restaurantController = {
         maxPrice,
         description,
         type,
+        deletedImages, // Assuming you send an array of image URLs to delete
       } = req.body;
       const files = req.files; // Assuming you're uploading new images
 
@@ -140,7 +148,8 @@ const restaurantController = {
         !maxPrice &&
         !description &&
         !type &&
-        (!files || files.length === 0) // No files uploaded
+        (!files || files.length === 0) && // No files uploaded
+        (!deletedImages || deletedImages.length === 0) // No images to delete
       ) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "At least one field or image is required for update",
@@ -173,8 +182,9 @@ const restaurantController = {
             maxPrice,
             description,
             type,
-            $push: { images: { $each: imageUrls } }, // Add new image URLs to the images array
           },
+          $addToSet: { images: { $each: imageUrls } }, // Add new image URLs to the images array
+          $pullAll: { images: deletedImages }, // Delete images from the images array
         },
         { new: true } // Return the updated document
       );
@@ -204,7 +214,7 @@ const restaurantController = {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const { name, address, timeStart, timeEnd, targetPrice } = req.query;
+    const { name, address, type, minPrice, maxPrice } = req.query;
 
     let query = {}; // Khởi tạo một đối tượng truy vấn trống
 
@@ -230,14 +240,15 @@ const restaurantController = {
       );
     }
 
-    if (targetPrice) {
-      query.minPrice = { $lte: targetPrice };
-      query.maxPrice = { $gte: targetPrice };
+    // Filter by type
+    if (type) {
+      query.type = type;
     }
 
-    if (timeStart && timeEnd) {
-      query.timeStart = { $lte: timeStart };
-      query.timeEnd = { $gte: timeEnd };
+    // Filter by minPrice and maxPrice
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      query.minPrice = { $gte: minPrice };
+      query.maxPrice = { $lte: maxPrice };
     }
 
     try {
@@ -290,7 +301,6 @@ const restaurantController = {
       }
       // find menu by restaurant id and return array of menu items
       const menu = await MenuModel.find({ idRestaurant: id });
-      console.log(menu);
       res
         .status(StatusCodes.OK)
         .json({ data: { restaurant, menu }, message: "Restaurant by id" });
@@ -391,7 +401,11 @@ const restaurantController = {
       const { restaurantId } = req.params;
 
       // Find all ratings for the specified restaurant ID
-      const ratings = await RatingModel.find().populate("user", "name");
+      const ratings = await RatingModel.find({
+        restaurant: restaurantId,
+      })
+        .populate("user", "name")
+        .sort({ createdAt: -1 });
 
       // Return the ratings
       res.status(StatusCodes.OK).json({
