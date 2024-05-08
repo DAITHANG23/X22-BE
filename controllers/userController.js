@@ -139,6 +139,9 @@ const userController = {
         return res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden" });
       }
       const employer = await EmployeesModel.findById(id);
+      if (!employer) {
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "Not found" });
+      }
       const { idRestaurant } = employer;
       if (!idRestaurant) {
         return res
@@ -147,6 +150,34 @@ const userController = {
       }
       const employees = await EmployeesModel.find({ idRestaurant });
       return res.status(StatusCodes.OK).json(employees);
+    } catch (error) {
+      console.error(error);
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
+    }
+  },
+  deleteEmployee: async (req, res) => {
+    try {
+      const { role, id } = req.user;
+      if (role !== 0) {
+        return res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden" });
+      }
+      const idEmployee = req.params.id;
+      // check if idEmployee is provided
+      if (!idEmployee) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Please provide employee id" });
+      }
+      // check if idEmployee is valid or not
+      const employee = await EmployeesModel.findById(idEmployee);
+      if (!employee) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ message: "Employee not found" });
+      }
+      // delete employee
+      await EmployeesModel.findByIdAndDelete(idEmployee);
+      return res.status(StatusCodes.OK).json({ message: "Deleted employee" });
     } catch (error) {
       console.error(error);
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "BAD REQUEST" });
