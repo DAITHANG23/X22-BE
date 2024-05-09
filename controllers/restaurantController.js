@@ -12,6 +12,7 @@ import EmployeesModel from "../models/Employees.js";
 const restaurantController = {
   createRestaurant: async (req, res) => {
     try {
+      const id = new ObjectId(req.user.id);
       const {
         name,
         phoneNumber,
@@ -103,7 +104,7 @@ const restaurantController = {
 
       // Assign this restaurant's ID to all employees
       await EmployeesModel.updateMany(
-        {},
+        { _id: id },
         { idRestaurant: savedRestaurant._id }
       );
 

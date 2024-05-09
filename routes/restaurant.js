@@ -5,7 +5,9 @@ import multer from "multer";
 
 // Controller
 import restaurantController from "../controllers/restaurantController.js";
-
+// Middlewares
+import verifyToken from "../middlewares/verifyToken.js";
+//
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   folder: "restaurant",
@@ -22,6 +24,7 @@ const restaurantRouter = express.Router();
 // CREATE
 restaurantRouter.post(
   "/create",
+  verifyToken.checkAdmin,
   upload.array("images", 5),
   restaurantController.createRestaurant
 );
@@ -29,6 +32,7 @@ restaurantRouter.post(
 // EDIT RESTAURANT
 restaurantRouter.put(
   "/:id",
+  verifyToken.checkAdmin,
   upload.array("images", 5),
   restaurantController.editRestaurant
 );
